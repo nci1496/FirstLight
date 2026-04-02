@@ -1,5 +1,5 @@
 import json
-from config import STATE_FILE_PATH
+from config import STATE_FILE_PATH, AFFECTION_RANGE, VALID_EMOTIONS
 
 # 初始化默认状态
 DEFAULT_STATE = {
@@ -28,20 +28,17 @@ def save_state(state):
     with open(STATE_FILE_PATH, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
-def update_state(user_input):
-    """根据用户输入更新状态（写死基础规则，方案核心）"""
+def update_state_by_llm(affection_change, new_emotion):
+    """
+    由LLM决策更新状态（核心升级）
+    :param affection_change: LLM输出的好感度变化值
+    :param new_emotion: LLM输出的新情绪值
+    :return: 无
+    """
     state = load_state()
-    # 规则1：用户说累/疲惫/倦 → 情绪变为关心，好感度+1
-    if any(word in user_input for word in ["累", "疲惫", "倦", "乏"]):
-        state["emotion"] = "caring"
-        state["affection"] += 1
-    # 规则2：用户说开心/高兴/快乐 → 情绪变为开心，好感度+1
-    elif any(word in user_input for word in ["开心", "高兴", "快乐", "爽"]):
-        state["emotion"] = "happy"
-        state["affection"] += 1
-    # 规则3：用户说烦/生气/讨厌 → 情绪变为冷淡，好感度-1
-    elif any(word in user_input for word in ["烦", "生气", "讨厌", "烦"]):
-        state["emotion"] = "cold"
-        state["affection"] -= 1
-    # 可根据需求扩展其他规则，核心保持极简
+    # 校验好感度变化值，超出范围则取边界
+    ac = max(AFFECTION_RANGE[0], min(AFFECTION_RANGE[1], affection_change))
+    state["affection"] += ac
+    # 校验情绪值，非法则保留原情绪
+    state["emotion"] = new_emotion if new_emotion in VALID_EMOTIONS else state["emotion"]
     save_state(state)

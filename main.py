@@ -1,4 +1,4 @@
-from persona import load_state, update_state
+from persona import load_state, update_state_by_llm
 from memory import load_memory, add_memory
 from agent import build_prompt, call_llm
 
@@ -22,14 +22,14 @@ def main():
 
         # 3. 拼接Prompt，调用本地模型
         prompt = build_prompt(current_state, current_memory, user_input)
-        ai_reply = call_llm(prompt)
+        llm_data = call_llm(prompt)  # 升级：返回字典{reply, affection_change, emotion}
 
         # 4. 输出AI回复
-        print(f"她: {ai_reply}")
+        print(f"她: {llm_data['reply']}")
 
-        # 5. 更新状态 + 保存新记忆（方案核心流程）
-        update_state(user_input)
-        add_memory(user_input, ai_reply)
+        # 5. 由LLM决策更新状态 + 保存新记忆（核心升级）
+        update_state_by_llm(llm_data["affection_change"], llm_data["emotion"])
+        add_memory(user_input, llm_data["reply"])
 
 
 if __name__ == "__main__":
